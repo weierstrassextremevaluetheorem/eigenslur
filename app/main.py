@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query
@@ -26,13 +27,25 @@ from app.services.storage import SQLiteStore
 settings = get_settings()
 static_dir = Path(__file__).resolve().parent / "static"
 
-storage = SQLiteStore(settings.database_path) if settings.enable_persistence else None
+storage_error: str | None = None
+resolved_database_path = settings.database_path
+storage: SQLiteStore | None = None
+if settings.enable_persistence:
+    configured_database_path = Path(settings.database_path)
+    if os.getenv("VERCEL") and not configured_database_path.is_absolute():
+        resolved_database_path = str(Path("/tmp") / configured_database_path.name)
+
+    try:
+        storage = SQLiteStore(resolved_database_path)
+    except Exception as error:
+        storage_error = str(error)
+        storage = None
 
 llm_configured = bool(settings.openai_api_key)
 llm_enabled = settings.use_llm_labeler and llm_configured
 labeler_mode = "heuristic_v1"
 
-if llm_enabled:
+if llm_enabled and settings.openai_api_key is not None:
     try:
         labeler = OpenAIJSONLabeler(
             api_key=settings.openai_api_key,
@@ -78,6 +91,10 @@ def health() -> HealthResponse:
         version=settings.app_version,
         labeler_mode=labeler_mode,
         llm_configured=llm_configured,
+        persistence_enabled=settings.enable_persistence,
+        persistence_available=storage is not None,
+        database_path=resolved_database_path,
+        persistence_error=storage_error,
     )
 
 

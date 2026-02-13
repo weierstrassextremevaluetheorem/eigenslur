@@ -12,13 +12,16 @@ def test_health() -> None:
     assert payload["status"] == "ok"
     assert isinstance(payload["labeler_mode"], str)
     assert isinstance(payload["llm_configured"], bool)
+    assert isinstance(payload["persistence_enabled"], bool)
+    assert isinstance(payload["persistence_available"], bool)
+    assert isinstance(payload["database_path"], str)
 
 
 def test_frontend_root() -> None:
     response = client.get("/")
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
-    assert "EigenSlur Frontend" in response.text
+    assert "Eigenslur Calculator" in response.text
 
 
 def test_static_css_served() -> None:

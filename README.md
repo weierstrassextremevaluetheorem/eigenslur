@@ -44,6 +44,14 @@ Set these env vars as needed:
 When `EIGENSLUR_USE_LLM_LABELER=true` but the API key or optional dependency is unavailable,
 the service automatically falls back to the heuristic labeler.
 
+## Vercel Deployment Notes
+
+- Use `api/index.py` as the serverless entrypoint (already included).
+- If persistence is enabled on Vercel and the configured path is relative (for example `data/eigenslur.db`),
+  the app automatically rewrites it to `/tmp/eigenslur.db` to avoid read-only filesystem crashes.
+- If SQLite still cannot initialize, the app now falls back to non-persistent mode instead of crashing,
+  and `/health` reports persistence availability and any startup error.
+
 Install optional LLM dependency when enabling LLM labeling:
 
 ```bash

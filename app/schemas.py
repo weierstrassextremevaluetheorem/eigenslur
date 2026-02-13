@@ -94,3 +94,7 @@ class HealthResponse(BaseModel):
     version: str
     labeler_mode: str
     llm_configured: bool
+    persistence_enabled: bool
+    persistence_available: bool
+    database_path: str
+    persistence_error: str | None = None
