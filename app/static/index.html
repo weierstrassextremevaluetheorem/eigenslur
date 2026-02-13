@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Eigenslur Calculator: Caluculating the offensiveness of a slur</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="bg-orb bg-orb-a" aria-hidden="true"></div>
+    <div class="bg-orb bg-orb-b" aria-hidden="true"></div>
+    <header class="hero reveal">
+      <div class="hero-copy">
+        <p class="kicker">Moderation Research Console</p>
+          <h1>Eigenslur Calculator: Caluculating the offensiveness of a slur</h1>
+          <p>
+            evaluating the offensiveness of a text using eigenvalues
+          </p>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-chip">
+          <span class="stat-label">Engine</span>
+          <span class="stat-value">Fusion v1</span>
+        </div>
+        <div class="stat-chip">
+          <span class="stat-label">Mode</span>
+          <span class="stat-value" id="ui-mode">Heuristic/LLM</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel reveal">
+        <h2>Term Eigen Score</h2>
+        <form id="term-form" class="form-grid">
+          <label for="term-input">
+            Term
+            <input id="term-input" type="text" placeholder="candidate-term" required />
+          </label>
+          <label for="term-locale">
+            Locale
+            <input id="term-locale" type="text" value="en-US" required />
+          </label>
+          <label for="term-trend">
+            Trend Velocity
+            <input id="term-trend" type="number" step="0.01" value="0.0" />
+          </label>
+
+          <div class="context-block">
+            <div class="context-header">
+              <h3>Contexts</h3>
+              <button type="button" class="ghost-btn" id="add-context-btn">
+                Add Context
+              </button>
+            </div>
+            <div id="contexts-list"></div>
+          </div>
+          <button type="submit" class="primary-btn">Score Term</button>
+        </form>
+      </section>
+
+      <section class="panel reveal">
+        <h2>Score Breakdown</h2>
+        <div id="term-result-empty" class="placeholder">
+          Submit a term to view score details.
+        </div>
+        <div id="term-result" class="hidden" aria-live="polite">
+          <div class="result-head">
+            <h3 id="result-term">term</h3>
+            <span class="band-pill" id="result-band">monitor</span>
+          </div>
+          <p class="score-line">
+            Score:
+            <strong id="result-score">0.00</strong>
+            <span class="mono">confidence <span id="result-confidence">0.00</span></span>
+          </p>
+          <div id="result-warnings" class="result-warnings hidden" role="status" aria-live="polite"></div>
+          <div class="meter-row">
+            <div class="meter-meta">
+              <span id="meter-label-severity">Severity</span>
+              <span class="meter-value mono" id="meter-value-severity">0.0%</span>
+            </div>
+            <div
+              class="meter"
+              id="meter-progress-severity"
+              role="progressbar"
+              aria-labelledby="meter-label-severity"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow="0"
+            ><div id="meter-severity"></div></div>
+          </div>
+          <div class="meter-row">
+            <div class="meter-meta">
+              <span id="meter-label-targetedness">Targetedness</span>
+              <span class="meter-value mono" id="meter-value-targetedness">0.0%</span>
+            </div>
+            <div
+              class="meter"
+              id="meter-progress-targetedness"
+              role="progressbar"
+              aria-labelledby="meter-label-targetedness"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow="0"
+            ><div id="meter-targetedness"></div></div>
+          </div>
+          <div class="meter-row">
+            <div class="meter-meta">
+              <span id="meter-label-reclaimed">Reclaimed Rate</span>
+              <span class="meter-value mono" id="meter-value-reclaimed">0.0%</span>
+            </div>
+            <div
+              class="meter"
+              id="meter-progress-reclaimed"
+              role="progressbar"
+              aria-labelledby="meter-label-reclaimed"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow="0"
+            ><div id="meter-reclaimed"></div></div>
+          </div>
+          <div class="metrics-grid">
+            <article>
+              <p>Context Eigenvalue</p>
+              <strong id="result-eigen-ctx">0.0000</strong>
+            </article>
+            <article>
+              <p>Graph Radius</p>
+              <strong id="result-eigen-graph">0.0000</strong>
+            </article>
+            <article>
+              <p>Model</p>
+              <strong id="result-model">fusion_v1</strong>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel reveal">
+        <h2>Text Sweep</h2>
+        <form id="text-form" class="form-grid">
+          <label class="full-width" for="text-input">
+            Input Text
+            <textarea
+              id="text-input"
+              rows="5"
+              placeholder="Paste content to scan for candidate terms..."
+              required
+            ></textarea>
+          </label>
+          <label class="full-width" for="text-terms">
+            Candidate Terms (comma separated)
+            <input id="text-terms" type="text" placeholder="term-a, term-b, term-c" required />
+          </label>
+          <label for="text-locale">
+            Locale
+            <input id="text-locale" type="text" value="en-US" required />
+          </label>
+          <button type="submit" class="primary-btn">Score Text</button>
+        </form>
+        <div id="text-results" class="result-list"></div>
+      </section>
+
+      <section class="panel reveal">
+        <h2>Term History</h2>
+        <form id="history-form" class="inline-form">
+          <label class="inline-field" for="history-term">
+            Term
+            <input id="history-term" type="text" placeholder="candidate-term" required />
+          </label>
+          <label class="inline-field" for="history-limit">
+            Result limit
+            <input id="history-limit" type="number" min="1" max="200" value="15" />
+          </label>
+          <button type="submit" class="primary-btn">Load</button>
+        </form>
+        <div id="history-results" class="history-list"></div>
+      </section>
+
+      <section class="panel reveal">
+        <h2>Reviewer Feedback</h2>
+        <form id="feedback-form" class="form-grid">
+          <label for="feedback-term">
+            Term
+            <input id="feedback-term" type="text" required />
+          </label>
+          <label for="feedback-locale">
+            Locale
+            <input id="feedback-locale" type="text" value="en-US" required />
+          </label>
+          <label for="feedback-type">
+            Feedback Type
+            <select id="feedback-type" required>
+              <option value="false_positive">False Positive</option>
+              <option value="false_negative">False Negative</option>
+              <option value="policy_override">Policy Override</option>
+              <option value="other">Other</option>
+            </select>
+          </label>
+          <label for="feedback-band">
+            Proposed Band
+            <select id="feedback-band">
+              <option value="">No Change</option>
+              <option value="monitor">Monitor</option>
+              <option value="review">Review</option>
+              <option value="block">Block</option>
+            </select>
+          </label>
+          <label for="feedback-score">
+            Proposed Score
+            <input id="feedback-score" type="number" step="0.01" min="0" max="1" />
+          </label>
+          <label class="full-width" for="feedback-notes">
+            Notes
+            <textarea id="feedback-notes" rows="3" placeholder="Why this decision should be updated..."></textarea>
+          </label>
+          <button type="submit" class="primary-btn">Submit Feedback</button>
+        </form>
+      </section>
+    </main>
+
+    <div id="toast" class="toast hidden" role="status" aria-live="polite" aria-atomic="true"></div>
+
+    <template id="context-template">
+      <div class="context-row">
+        <textarea rows="3" placeholder="Enter a usage context..." aria-label="Usage context" required></textarea>
+        <button type="button" class="ghost-btn context-remove">Remove</button>
+      </div>
+    </template>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
